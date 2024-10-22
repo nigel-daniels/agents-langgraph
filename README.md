@@ -37,9 +37,9 @@ Feedback        Model M          Refine
    |             ^   ^             |
    |             |   |             |
     -------------     -------------
-	Use M to get     Use M to refine
+    Use M to get     Use M to refine
   feedback on its  its previous output
-	 own output     given the feedback
+     own output     given the feedback
 ```
 [Self-Refine: Iterative refinement with self-feedback](https://arxiv.org/abs/2303.17651)
 ```
@@ -54,8 +54,8 @@ Input - Problem          Generate              Rank               Iterate on    
  Description +           Possible ---------> Solutions           Public Tests --------->  AI Tests  <-
  Public Tests            Solutions               |                    ^                       |       |
       |                      ^                   |                    |                       |       |
-	  |                      |                   |                    |_____                  |-------
-	  v                      |                   v                    |     |                 v
+      |                      |                   |                    |_____                  |-------
+      v                      |                   v                    |     |                 v
    Problem              Public Tests          Generate             Initial  |               Final
   Reflection --------->  Reasoning           Additional --------->  Code  <-               Solution
                                               AI Tests            Solution
