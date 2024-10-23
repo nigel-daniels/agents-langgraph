@@ -25,7 +25,6 @@ Reasoning         LLM             Env
 ```
 [ReAct: Synergizing reasoning and acting in language models](https://arxiv.org/abs/2210.03629)
 ```
-
 Self-Refine
 ===========
 
