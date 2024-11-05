@@ -10,11 +10,12 @@ const chatCompletion = await client.chat.completions.create({
 	messages: [{role: 'user', content: 'Hello world'}]
 });
 
-/*
+
 // Check we are working ok
 console.log(chatCompletion.choices[0].message.content);
-*/
 
+
+// We will be reusing this block so leave it uncommented!
 class Agent {
 	#system = null;
 	#messages = [];
@@ -154,11 +155,12 @@ const result7 = await aBot.call(nextPrompt4);
 console.log(result7);
 */
 
+/*
 // Let's try a fully automated version of this
 async function query(question, maxTurns = 5) {
-	const actionRegEx = /^Action: (\w+): (.*)$/g // This will find the action string
+	const actionRegEx = /^Action: (\w+): (.*)$/ // This will find the action string
 	const bot = new Agent(prompt);
-	console.log(actionRegEx);
+
 	let i = 0;
 	let nextPrompt = question;
 
@@ -169,24 +171,21 @@ async function query(question, maxTurns = 5) {
 
 		const actions = result
         	.split('\n')
-			.map(a => actionRegEx.matchAll(a))
+			.map(a => a.match(actionRegEx))
         	.filter(a => a !== null);
 
 		if (actions.length > 0) {
-			console.log(actions);
 			let [_, action, actionInput] = actions[0];
-			console.log(action);
-			console.log(actionInput);
 
 			if (!(action in knownActions)) {
 				throw new Error(`Unknown action: ${action}: ${actionInput}`);
+			}
 
-				console.log(` -- running ${action} ${actionInput}`);
-				let observation = knownActions[action](actionInput);
-				console.log('Observation:', observation);
+			console.log(` -- running ${action} ${actionInput}`);
+			let observation = knownActions[action](actionInput);
+			console.log('Observation:', observation);
 
-				nextPrompt = `Observation: ${observation}`;
-        	}
+			nextPrompt = `Observation: ${observation}`;
 		} else {
 			return;
 		}
@@ -195,3 +194,4 @@ async function query(question, maxTurns = 5) {
 
 const question2 = 'I have 2 dogs, a border collie and a scottish terrier.\nWhat is their combined weight?'
 await query(question2);
+*/

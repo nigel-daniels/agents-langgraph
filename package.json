@@ -10,7 +10,11 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "@langchain/community": "^0.3.8",
+    "@langchain/langgraph": "^0.2.18",
     "langchain": "^0.3.3",
-    "openai": "^4.68.2"
+    "openai": "^4.68.2",
+    "terminal-image": "^3.0.0",
+    "tsx": "^4.19.1"
   }
 }
