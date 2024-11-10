@@ -76,9 +76,15 @@ If you want to try these out you will first need to setup your own ChatGPT secre
 export OPENAI_API_KEY='your_secret_key_value'
 ```
 When you restart the shell or your machine the environment variable `OPENAI_API_KEY` will be in place.
+### Tavily API Key
+This tutorial also uses the [Tavily](https://docs.tavily.com) search tool. To use this you need to sign up for an API key and also export that API key in the same way we exported the OpenAPI key for ChatGPT. In this case you need to add the line:
+```
+export TAVILY_API_KEY='your_tavily_api_key'
+```
+Add this into your environment settings for the shell you are using.
 ### Node and JS
-Before trying any of the exercises don't forget to run `npm install` in the `./function_tools_agents` directory to install the Node modules needed.
+Before trying any of the exercises don't forget to run `npm install` in the `./agents-langraph` directory to install the Node modules needed.
 
-In each subdirectory you will find a `*.js` file and, sometimes, some supporting files. Each JS file contains multiple prompts.
+In each subdirectory you will find a `*.js` or a `*.ts` file and, sometimes, some supporting files. Each file contains multiple prompts.
 
 In most cases the initial exercise is ready to run and the other exercises are commented out using the `\* ... *\` comment markers. In these cases the commented code blocks will have their own calls to the LLM. If you uncomment these blocks then be sure to comment out the last to calls above while you run that exercise, it will reduce run time and costs.

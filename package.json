@@ -12,6 +12,9 @@
   "dependencies": {
     "@langchain/community": "^0.3.8",
     "@langchain/langgraph": "^0.2.18",
+    "@tavily/core": "^0.0.2",
+    "duckduckgo-search": "^1.0.7",
+    "html-to-text": "^9.0.5",
     "langchain": "^0.3.3",
     "openai": "^4.68.2",
     "terminal-image": "^3.0.0",

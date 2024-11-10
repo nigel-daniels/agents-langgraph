@@ -6,11 +6,11 @@ import { TavilySearchResults } from '@langchain/community/tools/tavily_search';
 import terminalImage from 'terminal-image';
 
 const tools = [new TavilySearchResults({maxResults: 4})];
+
 // Let's check the tool is set up
-/*
 console.log(tools[0].constructor.name);
 console.log(tools[0].name);
-*/
+
 
 // First we define the state
 const AgentState = Annotation.Root({
@@ -43,61 +43,77 @@ const graph = new StateGraph(AgentState)
 	.compile();
 
 // We can visualise the graph
-/*
-const graphImg = await abot.graph.getGraph().drawMermaidPng();
+
+const graphImg = await graph.getGraph().drawMermaidPng();
 const graphImgBuffer = await graphImg.arrayBuffer();
 console.log(await terminalImage.buffer(new Uint8Array(graphImgBuffer)));
+
+
+/*
+// Now lets call the agent with a question
+const messages1 = [new HumanMessage('What is the weather in sf?')];
+
+const result1 = await graph.invoke({messages: messages1});
+console.log('Final result: ' + JSON.stringify(result1));
+console.log('\nResult: ' + result1.messages[result1.messages.length-1].content);
 */
 
-// Now lets call the agent with a question
-const messages = [new HumanMessage('What is the weather in sf?')];
+/*
+// Let's try a more complex question
+const messages2 = [new HumanMessage('What is the weather in SF and LA?')];
 
-const result = await graph.invoke({messages: messages});
-console.log('Final result: ' + JSON.stringify(result));
+const result2 = await graph.invoke({messages: messages2});
+console.log('Result: ' + result2.messages[result2.messages.length-1].content);
+*/
+
+/*
+// Let's try a complex question where there is a demendency between the question results
+const messages3 = [new HumanMessage('Who won the super bowl in 2024? ' +
+	'In what state is the winning team headquarters located? ' +
+	'What is the GDP of that state? Answer each question.')];
+
+const result3 = await graph.invoke({messages: messages3});
+console.log('Result: ' + result3.messages[result3.messages.length-1].content);
+*/
 
 
+
+///////// FUNCTIONS USED BY THE GRAPH //////////
 // This is the function for the conditional edge
 function existsAction(state) {
-	console.log('existsAction, called');
-	console.log(state);
 	const result = state.messages[state.messages.length-1];
-	//console.log(result);
-	return result.toolCalls.length > 0;
+
+	return result.tool_calls.length > 0;
 }
 
 // This is the function for the llm node
 async function callOpenAi(state) {
-	console.log('callOpenAi, called');
 	let messages = state.messages;
 
 	if (system) {
 		messages = [new SystemMessage(system), ...messages];
 	}
-	//console.log('callOpenAi, messages: ' + JSON.stringify(messages));
-	const message = await model.invoke(messages);
-	//console.log('callOpenAi, message: ' + JSON.stringify(message));
-	return {message: [message]};
 
+	const message = await model.invoke(messages);
+	return {messages: [message]};
 }
 
 // This is the function for the action node
 async function takeAction(state) {
-	console.log('takeAction, called');
 	const results = [];
-	const toolCalls = state.messages[state.messages.length-1].toolCalls;
+	const toolCalls = state.messages[state.messages.length-1].tool_calls;
 	let result = null;
 
-	for (const t in toolCalls) {
-		console.log('Calling: ' + t);
-
-		if (!(t in tools)) {
+	for(const t of toolCalls) {
+		console.log('Calling: ' + JSON.stringify(t));
+		if (tools.some(tool => tool.name === t.name)) {
+			const tool = tools.find(tool => tool.name === t.name);
+			result = await tool.invoke(t.args);
+		} else {
 			console.log('\n...bad tool name...');
 			result = 'bad tool name, retry';
-		} else {
-			result = await tools[t.name](t.args);
 		}
-
-		results.push(new ToolMessage({toolCallId: t.id, name: t.name, content: result.toString()}));
+		results.push(new ToolMessage({tool_call_id: t.id, name: t.name, content: result.toString()}));
 	}
 
 	console.log('Back to the model!');
