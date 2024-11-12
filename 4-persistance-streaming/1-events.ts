@@ -1,15 +1,11 @@
 import { StateGraph, Annotation, END } from "@langchain/langgraph";
 import { ChatOpenAI } from '@langchain/openai';
 import { BaseMessage, SystemMessage, HumanMessage } from '@langchain/core/messages';
-import { ToolMessage } from '@langchain/core/messages/tool';
+import { ToolMessage } from '@langchain/core/messages/tool'
+import { SqliteSaver } from '@langchain/langgraph-checkpoint-sqlite';
 import { TavilySearchResults } from '@langchain/community/tools/tavily_search';
-import terminalImage from 'terminal-image';
 
-const tools = [new TavilySearchResults({maxResults: 4})];
-
-// Let's check the tool is set up
-console.log(tools[0].constructor.name);
-console.log(tools[0].name);
+const tools = [new TavilySearchResults({maxResults: 2})];
 
 // First we define the state
 const AgentState = Annotation.Root({
@@ -18,6 +14,9 @@ const AgentState = Annotation.Root({
 		default: () => []
 	})
 });
+
+// Now define the memory for persistance
+const memory = SqliteSaver.fromConnString(':memory:');
 
 // Now the system prompt
 const system = `You are a smart research assistant. Use the search engine to look up information.
@@ -39,41 +38,56 @@ const graph = new StateGraph(AgentState)
 	)
 	.addEdge('action','llm')
 	.setEntryPoint('llm')
-	.compile();
-
-// We can visualise the graph
-
-const graphImg = await graph.getGraph().drawMermaidPng();
-const graphImgBuffer = await graphImg.arrayBuffer();
-console.log(await terminalImage.buffer(new Uint8Array(graphImgBuffer)));
+	.compile({checkpointer: memory});
 
 
-/*
 // Now lets call the agent with a question
 const messages1 = [new HumanMessage('What is the weather in sf?')];
 
-const result1 = await graph.invoke({messages: messages1});
-console.log('Final result: ' + JSON.stringify(result1));
-console.log('\nResult: ' + result1.messages[result1.messages.length-1].content);
-*/
+const config1 = {
+	streamMode: 'updates', // Specifies we want to see the internal events
+	configurable: {thread_id: '1'} // Used by memory to keep the converstion going
+};
 
-/*
-// Let's try a more complex question
-const messages2 = [new HumanMessage('What is the weather in SF and LA?')];
+for await (const event of await graph.stream({messages: messages1}, config1)) {
+	for (const [node, values] of Object.entries(event)) {
+		console.log(values.messages);
+	}
+}
 
-const result2 = await graph.invoke({messages: messages2});
-console.log('Result: ' + result2.messages[result2.messages.length-1].content);
-*/
 
-/*
-// Let's try a complex question where there is a demendency between the question results
-const messages3 = [new HumanMessage('Who won the super bowl in 2024? ' +
-	'In what state is the winning team headquarters located? ' +
-	'What is the GDP of that state? Answer each question.')];
+// Let's check this is a converstion, this should know we're asking about the weather
+const messages2 = [new HumanMessage('What about in LA?')];
 
-const result3 = await graph.invoke({messages: messages3});
-console.log('Result: ' + result3.messages[result3.messages.length-1].content);
-*/
+for await (const event of await graph.stream({messages: messages2}, config1)) {
+	for (const [node, values] of Object.entries(event)) {
+		console.log(values.messages);
+	}
+}
+
+
+
+// This should show we can access the context
+const messages3 = [new HumanMessage('Which one is warmer?')];
+
+for await (const event of await graph.stream({messages: messages3}, config1)) {
+	for (const [node, values] of Object.entries(event)) {
+		console.log(values.messages);
+	}
+}
+
+
+
+// Here we can see the importance of the thread_id in maintining that context
+const config2 = {
+	streamMode: 'updates',
+	configurable: {thread_id: '2'}
+};
+for await (const event of await graph.stream({messages: messages3}, config2)) {
+	for (const [node, values] of Object.entries(event)) {
+		console.log(values.messages);
+	}
+}
 
 
 
@@ -114,7 +128,6 @@ async function takeAction(state) {
 		}
 		results.push(new ToolMessage({tool_call_id: t.id, name: t.name, content: result.toString()}));
 	}
-
 	console.log('Back to the model!');
 	return {messages: results};
 }

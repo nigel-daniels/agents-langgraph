@@ -1,20 +1,24 @@
 import { StateGraph, Annotation, END } from "@langchain/langgraph";
 import { ChatOpenAI } from '@langchain/openai';
-import { BaseMessage, SystemMessage, HumanMessage } from '@langchain/core/messages';
-import { ToolMessage } from '@langchain/core/messages/tool';
+import { MessageUnion, SystemMessage, HumanMessage, AIMessage } from '@langchain/core/messages';
+import { ToolMessage } from '@langchain/core/messages/tool'
+import { SqliteSaver } from '@langchain/langgraph-checkpoint-sqlite';
 import { TavilySearchResults } from '@langchain/community/tools/tavily_search';
-import terminalImage from 'terminal-image';
+import { v4 as uuid4 } from 'uuid';
 
-const tools = [new TavilySearchResults({maxResults: 4})];
+// Here we set up the parts we need for the agent
 
-// Let's check the tool is set up
-console.log(tools[0].constructor.name);
-console.log(tools[0].name);
+// First define the memory for persistance
+const memory = SqliteSaver.fromConnString(':memory:');
+
+
+// Set up the tools
+const tools = [new TavilySearchResults({maxResults: 2})];
 
 // First we define the state
 const AgentState = Annotation.Root({
 	messages: Annotation<BaseMessage[]>({
-		reducer: (x, y) => x.concat(y),
+		reducer: (left, right) => reduceMessages(left, right), // Now we use the function
 		default: () => []
 	})
 });
@@ -26,9 +30,12 @@ Only look up information when you are sure of what you want.
 If you need to look up some information before asking a follow up question, you are allowed to do that!`;
 
 // Now the model we will use
-const model = new ChatOpenAI({model: 'gpt-3.5-turbo'}).bindTools(tools);
+const model = new ChatOpenAI({
+	model: 'gpt-3.5-turbo',
+}).bindTools(tools);
 
-// Here is where we construct the graph
+
+// Now we can construct our agent graph
 const graph = new StateGraph(AgentState)
 	.addNode('llm', callOpenAi)
 	.addNode('action', takeAction)
@@ -39,43 +46,34 @@ const graph = new StateGraph(AgentState)
 	)
 	.addEdge('action','llm')
 	.setEntryPoint('llm')
-	.compile();
-
-// We can visualise the graph
-
-const graphImg = await graph.getGraph().drawMermaidPng();
-const graphImgBuffer = await graphImg.arrayBuffer();
-console.log(await terminalImage.buffer(new Uint8Array(graphImgBuffer)));
+	.compile({
+		checkpointer: memory,
+		interruptBefore: ['action']
+	});
 
 
-/*
+
 // Now lets call the agent with a question
 const messages1 = [new HumanMessage('What is the weather in sf?')];
 
-const result1 = await graph.invoke({messages: messages1});
-console.log('Final result: ' + JSON.stringify(result1));
-console.log('\nResult: ' + result1.messages[result1.messages.length-1].content);
-*/
+const config1 = {
+	streamMode: 'updates', // Specifies we want to see the internal events
+	configurable: {thread_id: '1'} // Used by memory to keep the converstion going
+};
 
-/*
-// Let's try a more complex question
-const messages2 = [new HumanMessage('What is the weather in SF and LA?')];
+for await (const event of await graph.stream({messages: messages1}, config1)) {
+	for (const [node, values] of Object.entries(event)) {
+		console.log(values.messages);
+	}
+}
 
-const result2 = await graph.invoke({messages: messages2});
-console.log('Result: ' + result2.messages[result2.messages.length-1].content);
-*/
+console.log('--- Graph Interrupted ---');
 
-/*
-// Let's try a complex question where there is a demendency between the question results
-const messages3 = [new HumanMessage('Who won the super bowl in 2024? ' +
-	'In what state is the winning team headquarters located? ' +
-	'What is the GDP of that state? Answer each question.')];
-
-const result3 = await graph.invoke({messages: messages3});
-console.log('Result: ' + result3.messages[result3.messages.length-1].content);
-*/
-
-
+for await (const event of await graph.stream(null, config1)) {
+	for (const [node, values] of Object.entries(event)) {
+		console.log(values);
+	}
+}
 
 ///////// FUNCTIONS USED BY THE GRAPH //////////
 // This is the function for the conditional edge
@@ -114,7 +112,30 @@ async function takeAction(state) {
 		}
 		results.push(new ToolMessage({tool_call_id: t.id, name: t.name, content: result.toString()}));
 	}
-
 	console.log('Back to the model!');
 	return {messages: results};
+}
+
+// This function is used by the graph state to update the messages list
+// This lets us update previous messages based on id (or we add them)
+function reduceMessages(left: MessageUnion[], right: MessageUnion[]):MessaggeUnion[] {
+	for (const message of right) {
+		if (!message.id) {
+			message.id = uuid4();
+		}
+	}
+
+	let merged = left;
+
+	for (const message of right) {
+		const i = merged.findIndex(message => merged.id == message.id);
+
+		if (i == -1) {
+			merged.push(message);
+		} else {
+			merged[i] = message;
+		}
+	}
+
+	return merged;
 }

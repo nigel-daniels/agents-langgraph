@@ -1,15 +1,11 @@
 import { StateGraph, Annotation, END } from "@langchain/langgraph";
 import { ChatOpenAI } from '@langchain/openai';
-import { BaseMessage, SystemMessage, HumanMessage } from '@langchain/core/messages';
-import { ToolMessage } from '@langchain/core/messages/tool';
+import { BaseMessage, SystemMessage, HumanMessage, isAIMessageChunk } from '@langchain/core/messages';
+import { ToolMessage } from '@langchain/core/messages/tool'
+import { SqliteSaver } from '@langchain/langgraph-checkpoint-sqlite';
 import { TavilySearchResults } from '@langchain/community/tools/tavily_search';
-import terminalImage from 'terminal-image';
 
-const tools = [new TavilySearchResults({maxResults: 4})];
-
-// Let's check the tool is set up
-console.log(tools[0].constructor.name);
-console.log(tools[0].name);
+const tools = [new TavilySearchResults({maxResults: 2})];
 
 // First we define the state
 const AgentState = Annotation.Root({
@@ -19,6 +15,9 @@ const AgentState = Annotation.Root({
 	})
 });
 
+// Now define the memory for persistance
+const memory = SqliteSaver.fromConnString(':memory:');
+
 // Now the system prompt
 const system = `You are a smart research assistant. Use the search engine to look up information.
 You are allowed to make multiple calls (either together or in sequence).
@@ -26,7 +25,11 @@ Only look up information when you are sure of what you want.
 If you need to look up some information before asking a follow up question, you are allowed to do that!`;
 
 // Now the model we will use
-const model = new ChatOpenAI({model: 'gpt-3.5-turbo'}).bindTools(tools);
+const model = new ChatOpenAI({
+	model: 'gpt-3.5-turbo',
+	temperature: 0,
+	streaming: true
+}).bindTools(tools);
 
 // Here is where we construct the graph
 const graph = new StateGraph(AgentState)
@@ -39,41 +42,25 @@ const graph = new StateGraph(AgentState)
 	)
 	.addEdge('action','llm')
 	.setEntryPoint('llm')
-	.compile();
-
-// We can visualise the graph
-
-const graphImg = await graph.getGraph().drawMermaidPng();
-const graphImgBuffer = await graphImg.arrayBuffer();
-console.log(await terminalImage.buffer(new Uint8Array(graphImgBuffer)));
+	.compile({checkpointer: memory});
 
 
-/*
 // Now lets call the agent with a question
 const messages1 = [new HumanMessage('What is the weather in sf?')];
 
-const result1 = await graph.invoke({messages: messages1});
-console.log('Final result: ' + JSON.stringify(result1));
-console.log('\nResult: ' + result1.messages[result1.messages.length-1].content);
-*/
+const config1 = {
+	streamMode: 'messages', // Specifies we want to see the LLM tokens
+	configurable: {thread_id: '4'}, // Used by memory to keep the converstion going
+	version: 'v2'
+};
 
-/*
-// Let's try a more complex question
-const messages2 = [new HumanMessage('What is the weather in SF and LA?')];
+const stream = await graph.stream({messages: messages1}, config1);
 
-const result2 = await graph.invoke({messages: messages2});
-console.log('Result: ' + result2.messages[result2.messages.length-1].content);
-*/
-
-/*
-// Let's try a complex question where there is a demendency between the question results
-const messages3 = [new HumanMessage('Who won the super bowl in 2024? ' +
-	'In what state is the winning team headquarters located? ' +
-	'What is the GDP of that state? Answer each question.')];
-
-const result3 = await graph.invoke({messages: messages3});
-console.log('Result: ' + result3.messages[result3.messages.length-1].content);
-*/
+for await (const [message, _metadata] of stream) {
+  if (isAIMessageChunk(message)) {
+	  if (message.content) { process.stdout.write(message.content + '|'); }
+  }
+}
 
 
 
@@ -114,7 +101,6 @@ async function takeAction(state) {
 		}
 		results.push(new ToolMessage({tool_call_id: t.id, name: t.name, content: result.toString()}));
 	}
-
 	console.log('Back to the model!');
 	return {messages: results};
 }
