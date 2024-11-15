@@ -10,6 +10,7 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "@inquirer/confirm": "^5.0.2",
     "@langchain/community": "^0.3.8",
     "@langchain/langgraph": "^0.2.20",
     "@langchain/langgraph-checkpoint-sqlite": "^0.1.3",
