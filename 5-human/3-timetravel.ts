@@ -109,12 +109,40 @@ const branchState = await graph.updateState(toReplay.config, toReplay.values);
 
 for await (const event of await graph.stream(null, branchState)) {
 	for (const [node, values] of Object.entries(event)) {
-		console.log('node');
-		console.log(node);
-		console.log('values');
-		console.log(values.messages);
+		if (node !== '__end__') {
+			console.log(values);
+		}
 	}
 }
+
+// Another option is to add a message to a state at a given timepoint
+// We have this message we just modified
+console.log(toReplay);
+
+// We could fake a response to this as though a tool was called
+// Let's get the tool call id, this needs to be in the 'reply'
+const _id = toReplay.values.messages[toReplay.values.messages.length-1].tool_calls[0].id;
+
+const toolMessage = new ToolMessage({
+	toolCallId: _id,
+	name: 'tavily_search_results_json',
+	content: '54 degree celcius'
+});
+
+const stateUpdate = {messages: [toolMessage]};
+
+// Note that when we do the update we need to specify we are adding this state
+// 'as if' we were the action node so we don't need to visit that node
+const branchAndAdd = await graph.updateState(toReplay.config, stateUpdate, 'action');
+
+for await (const event of await graph.stream(null, branchAndAdd)) {
+	for (const [node, values] of Object.entries(event)) {
+		console.log(values);
+	}
+}
+
+
+
 
 ///////// FUNCTIONS USED BY THE GRAPH //////////
 
