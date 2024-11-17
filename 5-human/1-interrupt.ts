@@ -1,4 +1,4 @@
-import { StateGraph, Annotation, END } from "@langchain/langgraph";
+import { StateGraph, Annotation, END } from '@langchain/langgraph';
 import { ChatOpenAI } from '@langchain/openai';
 import { MessageUnion, SystemMessage, HumanMessage, AIMessage } from '@langchain/core/messages';
 import { ToolMessage } from '@langchain/core/messages/tool'
@@ -166,16 +166,21 @@ async function takeAction(state) {
 // This function is used by the graph state to update the messages list
 // This lets us update previous messages based on id (or we add them)
 function reduceMessages(left: MessageUnion[], right: MessageUnion[]):MessaggeUnion[] {
+	// Ensure any new messages have an id
 	for (const message of right) {
-		if (!message.id) {
+		if (message.id === null || message.id === undefined) {
 			message.id = uuid4();
+			message.lc_kwargs.id = message.id;
 		}
 	}
 
+	// Copy the current set of messages
 	const merged = [...left];
 
+	// Now check to see if the new message exists in the curren set of messages
+	// if it does we update it if it does not we append it to the end ofg the array
 	for (const message of right) {
-		const i = merged.findIndex(element => element.id === message.id);
+		const i = merged.findIndex(existing => existing.id === message.id);
 
 		i !== -1 ? merged[i] = message : merged.push(message);
 	}
