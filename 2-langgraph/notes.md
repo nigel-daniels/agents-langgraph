@@ -26,7 +26,7 @@ Prompt      |  System: You are a ...  |       Example session:
                          v                 |           of a collie.
               -------------------------    |
              |   Action: call a tool   |   |  Action: averageDogWeight Toy Poodle\n
-			  -------------------------    |		  PAUSE
+              -------------------------    |		  PAUSE
                          |                 |
                          v                 |
                         / \                |

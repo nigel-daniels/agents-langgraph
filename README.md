@@ -183,7 +183,7 @@ This makes great use of persistence to jump back to previous times when needed.
                              | % |  | % |  | %.8 || %.4 || %.8 || %.4 || %.9 || %.4 |
                               ---    ---    -----  -----  -----  -----  --|--  --|--
                                                           |   |           | ^^   |
-											              v   v           v | \  v
+                                                          v   v           v | \  v
                                                          ---  ---       -----  -----
                                                         | % || % |     | %.2 || % 1 |
                                                          ---  ---       -----  -----

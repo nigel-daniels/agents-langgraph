@@ -43,7 +43,7 @@ We can also get an iterator over all of the previous states:
                                                      --------- |
                                                       --------- |
     Returns an iterator over        	               --------- |
-       all StateSnapshots				                 ---------
+       all StateSnapshots                                ---------
 ```
 Using the iterator allows us to get individual snapshots with their UIDs `thread_ts` we can then use this to replay from a previous point:
 ```
