@@ -74,7 +74,7 @@ const graph = new StateGraph(AgentState)
 	.addConditionalEdges(
 		'generate',
 		shouldContinue,
-		{END: END, reflect: 'reflect'}
+		['reflect', END]
 	)
 	.setEntryPoint('planner')
 	.compile({ checkpointer: memory });
@@ -91,9 +91,12 @@ for await (const event of await graph.stream({
 	revision: 1
 }, thread)) {
 	for (const [node, values] of Object.entries(event)) {
-		console.log(values.messages);
+		console.log(values);
 	}
 }
+
+
+
 ///////// FUNCTIONS USED BY THE GRAPH //////////
 async function planNode(state: AgentState) {
 	const messages = [
@@ -117,10 +120,10 @@ async function researchPlanNode(state: AgentState) {
 
 	const content = (state.content || []);
 
-	for (const q in queries.queries) {
+	for (const q of queries.queries) {
 		const response = await client.search(q, {maxResults: 2});
 
-		for (const r in response.results) {
+		for (const r of response.results) {
 			content.push(r.content);
 		}
 	}
@@ -141,7 +144,7 @@ async function generationNode(state: AgentState) {
 
 	const response = await model.invoke(messages);
 
-	return {draft: response.content, revision: state.revision++};
+	return {draft: response.content, revision: state.revision+1};
 }
 
 
@@ -167,10 +170,10 @@ async function researchCritiqueNode(state: AgentState) {
 
 	const content = (state.content || []);
 
-	for (const q in queries.queries) {
+	for (const q of queries.queries) {
 		const response = await client.search(q, {maxResults: 2});
 
-		for (const r in response.results) {
+		for (const r of response.results) {
 			content.push(r.content);
 		}
 	}
