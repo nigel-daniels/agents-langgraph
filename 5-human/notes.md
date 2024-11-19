@@ -58,7 +58,7 @@ If we do the above with out the `thread_ts` identifier we will use the current s
     graph.invoke(null, {..., thread, ...});       ---------
     graph.stream(null, {..., thread, ...});      | State 3 |
                                                   ---------
-	                                        Uses the current state
+                                            Uses the current state
                                              as the starting point
 ```
 We can also use the `thread_ts` to access a previous state, we can then modify it and add the modified state back on the memory stack making it the current state:
