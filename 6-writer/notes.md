@@ -28,11 +28,11 @@ research_plan   | 2 |
               ---   ---      |
           reflect  |   |     |
                     ---      |
-					 |       |
-			         v       |
-			        ---      |
+                     |       |
+                     v       |
+                    ---      |
 research_critique  |   |-----
-			        ---
+                    ---
 ```
 1. You are an expert writer tasked with writing a <u>**high level outline**</u> of an essay. Write such an outline for the user provided topic. Give an outline of the essay along with any relevant notes or instructions for the sections.
 2. You are a researcher charged with providing information that can be used when writing the following essay. Generate a list of **search queries that will gather any relevant information**. Only generate 3 queries max.

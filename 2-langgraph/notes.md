@@ -8,20 +8,20 @@ In this lesson we are going to look at how what we did in the last session can b
   User      | What is the ... Poodle? |       ...
              -------------------------        Your available actions are...
                          |
-			             v                    calculate: e.g. 4*7/3
+                         v                    calculate: e.g. 4*7/3
              -------------------------		  ...
 Prompt      |  System: You are a ...  |       Example session:
              -------------------------        User: ...weight of collie...
             | What is the ... Poodle? |
              -------------------------
-			|         Obs: 37         |<----
-			 -------------------------     |
+            |         Obs: 37         |<----
+             -------------------------     |
                          |                 |
                          |                 |
                          v                 |
               ------------------------     |
    LLM       |          LLM           |    |  Thought: To find the combined weights
-			  ------------------------     |           of a collie and a poodle I
+              ------------------------     |           of a collie and a poodle I
                          |                 |           first need the average weight
                          v                 |           of a collie.
               -------------------------    |
@@ -31,8 +31,8 @@ Prompt      |  System: You are a ...  |       Example session:
                          v                 |
                         / \                |
                        <   >               |
-						\ /                |
-					   / V \               |
+                        \ /                |
+                       / V \               |
                       /     \              |
                      /       \             |
                  return   --------         |
@@ -158,6 +158,7 @@ Some of the key features that LangGraph supports are familiar from any directed 
 
  --------->       Edges: connecting Nodes
 
+       ^
       / \--->
 ----><   >        Conditional edges: decisions
       \ /--->
@@ -171,14 +172,14 @@ So to create our previous code in LangGraph we simply need the following set up:
                     ---
 Agent node         |   |<-------
                     ---         |		  
-		             |          |
-		             v          |  Edge
-		            / \         |
+                     |          |
+                     v          |  Edge
+                    / \         |
 Conditional edge   <   >        |
-		            \ /         |
+                    \ /         |
                    / V \ action |
                   /     \       |
-	             ---   ---      |
+                 ---   ---      |
 End node        | X | |   |-----   Function node
                  ---   ---
 ```

@@ -42,8 +42,8 @@ We can also get an iterator over all of the previous states:
     graph.getStateHistory({..., thread, ...});      | State 3 |
                                                      --------- |
                                                       --------- |
-	Returns an iterator over        	               --------- |
-		all StateSnapshots				                 ---------
+    Returns an iterator over        	               --------- |
+       all StateSnapshots				                 ---------
 ```
 Using the iterator allows us to get individual snapshots with their UIDs `thread_ts` we can then use this to replay from a previous point:
 ```
@@ -57,9 +57,9 @@ If we do the above with out the `thread_ts` identifier we will use the current s
 ```
     graph.invoke(null, {..., thread, ...});       ---------
     graph.stream(null, {..., thread, ...});      | State 3 |
-    											  ---------
+                                                  ---------
 	                                        Uses the current state
-		                                     as the starting point
+                                             as the starting point
 ```
 We can also use the `thread_ts` to access a previous state, we can then modify it and add the modified state back on the memory stack making it the current state:
 ```
@@ -74,7 +74,7 @@ We can also use the `thread_ts` to access a previous state, we can then modify i
                                                              |
                                                              V
                                                          ---------
-	graph.updateState(thread, state_m.values);          | State 4 |
+    graph.updateState(thread, state_m.values);          | State 4 |
                                                          ---------
     graph.invoke(null, {..., thread, ...});   Runs state 4 as the current state.
 ```
