@@ -88,3 +88,103 @@ Before trying any of the exercises don't forget to run `npm install` in the `./a
 In each subdirectory you will find a `*.js` or a `*.ts` file and, sometimes, some supporting files. Each file contains multiple prompts.
 
 In most cases the initial exercise is ready to run and the other exercises are commented out using the `\* ... *\` comment markers. In these cases the commented code blocks will have their own calls to the LLM. If you uncomment these blocks then be sure to comment out the last to calls above while you run that exercise, it will reduce run time and costs.
+
+## Conclusion
+There are some architectures it is worth knpwing about but which are not covered by this course. These include:
+### Multi-Agent
+Multiple agents working on the same state. All work on the same shared state.
+```
+ -----------------------------------
+|                User               |
+| Input: Generate a chart of ave.   |
+| temp. in Alaska over last decade. |
+ -----------------------------------
+              |
+   First go to researcher
+              |
+              v
+ --------------------------                            -----------------------                            -----------------
+|        Researcher        |--------- message ------->|        Router         |<-------- message --------| Chart Generator |
+| Call a 'search' function |                          | (If statements based) |                          |                 |
+|       or FINISH          |<--- If 'continue' and ---|    on agent output)   |--- If 'continue' and --->|  Code execution |
+ --------------------------       state.sender ==      -----------------------       state.sender ==      -----------------
+              ^                  'chart_generator'               |                    'researcher'               ^
+              |                                                  |                                               |
+      If state.sender ==                                If function is called                             If state.sender ==
+        'researcher'                                             |                                         'chart_generator'
+              |                                                  v                                               |
+              |                                             -----------                                          |
+			   --------------------------------------------| call_tool |-----------------------------------------
+                                                            -----------
+```
+### Supervisor
+In this case the state may not be shared, each Agent may be a separate graph. The supervisor can use a more powerful LLM.
+```
+                -------
+               | User  |
+                -------
+                 |   ^
+                 |   |
+                 v   |
+  -----------------------------------
+ |            Supervisor             |
+  -----------------------------------
+   ^   |         |   ^         ^   |
+   | route     route |         | route
+   |   |         |   |         |   |       
+   |   v         v   |         |   v
+ ---------     ---------     ---------
+| Agent 1 |   | Agent 2 |   | Agent 3 |
+ ---------     ---------     ---------
+```
+### Flow Engineering (Plan and Execute)
+See the [Codium model above](###Cyclic-Graphs), this is essentially a pipeline with some noted that loop. The plan and execute style flow is a simpler example of this:
+
+```
+               ------
+   ---------->| Plan |
+   |           ------
+   |              |
+   |      2 generate tasks  
+1 user            v
+ request     -----------                                     -----------------
+   |        | Task list |                                    |               |
+ ------     | * ~~~~~~~ |                    -------------------             v
+| User |    | * ~~~~~~~ |-- 3 exec tasks -->| Single-task-agent |  Loop to solve task <--> TOOL
+ ------     | * ~~~~~~~ |                    -------------------             |
+   ^        | * ~~~~~~~ |                             |      ^               |
+   |	     -----------                              |      -----------------
+   |              ^                            4 update state
+   |     5b replan more tasks                 with task results
+5a respond        |                                   |
+  to user     --------                                |
+   ----------| Replan |<-------------------------------
+              --------
+```
+### Language Agent Tree Search
+This approach repeats until solved:
+1. Select Node
+2. Generate new candidates
+2. Act, reflect and score
+3. Back propagate (update parents)
+This makes great use of persistence to jump back to previous times when needed.
+```
+ ----------     ---------     ----------     ---------     ----------     ---------
+| Generate |   | Reflect |   | Generate |   | Reflect |   | Generate |   | Reflect |
+ ----------    ^---------    ^----------    ^---------    ^----------    ^---------
+     |        /     |       /     |        /  |     |    /              / |   |  |
+     v       /      v      /      v       /   |     |   /              /  |   v  |  
+ ---------- /   --------- /   ---------- /   -|-----|- /   ---------- /   |------|-
+|   %Act   |   | %Act .3 |   | %Act .3  |   | %Act .6 |   | %Act .6  |   ||%Act .7 |   
+ ----------     ---------     ----------     -|-----|-     ----------     |------|-
+                               |      |       | ^ ^ |       |             |  ^   |
+                               v      v       v/   \v       v             | /    |
+							  ---    ---    -----  -----  -----  -----  --|--  --|--
+                             | % |  | % |  | %.8 || %.4 || %.8 || %.4 || %.9 || %.4 |
+                              ---    ---    -----  -----  -----  -----  --|--  --|--
+                                                          |   |           | ^^   |
+											              v   v           v | \  v
+                                                         ---  ---       -----  -----
+                                                        | % || % |     | %.2 || % 1 |
+                                                         ---  ---       -----  -----
+```
